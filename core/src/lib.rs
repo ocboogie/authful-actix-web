@@ -1,10 +1,10 @@
 #[macro_use]
 extern crate diesel;
 
-mod schema;
-mod services;
 pub mod errors;
 pub mod models;
+mod schema;
+mod services;
 pub mod utils;
 
 use diesel::{
@@ -25,10 +25,7 @@ pub struct Context<'a> {
 
 impl<'a> Context<'a> {
     pub fn new(conn: &'a PgConnection, secret: &'a str) -> Self {
-        Self {
-            conn,
-            secret,
-        }
+        Self { conn, secret }
     }
 }
 
