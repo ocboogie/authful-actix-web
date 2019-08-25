@@ -15,16 +15,16 @@ use diesel::{
 pub use errors::Error;
 pub use services::*;
 pub type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
+pub type PooledConnection = r2d2::PooledConnection<ConnectionManager<PgConnection>>;
 
-#[derive(Clone)]
 pub struct Context<'a> {
-    pub conn: &'a PgConnection,
+    pub conn: PooledConnection,
     // TODO: Might want to make this `SecretKey`
     pub secret: &'a str,
 }
 
 impl<'a> Context<'a> {
-    pub fn new(conn: &'a PgConnection, secret: &'a str) -> Self {
+    pub fn new(conn: PooledConnection, secret: &'a str) -> Self {
         Self { conn, secret }
     }
 }

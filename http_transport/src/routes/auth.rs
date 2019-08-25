@@ -1,9 +1,6 @@
-use crate::{
-    auth::{LoggedUser, SECRET_KEY},
-    errors::Error,
-};
+use crate::{errors::Error, ContextProvider, LoggedUser};
 use actix_web::{http::Cookie, web, HttpResponse};
-use core::{auth, Context, Pool};
+use core::{auth, Context};
 use futures::Future;
 use time::now;
 
@@ -17,15 +14,14 @@ pub struct UserForm {
 // of `auth::login`. Fix that.
 pub fn signup(
     form: web::Json<UserForm>,
-    pool: web::Data<Pool>,
+    ctx: ContextProvider,
 ) -> impl Future<Item = HttpResponse, Error = Error> {
     let form = form.into_inner();
 
     web::block(move || {
-        let pool = pool.get().unwrap();
-        let ctx = Context::new(&pool, SECRET_KEY.as_str());
-        let user_id = auth::signup(ctx.clone(), &form.email, &form.password)?;
-        auth::create_session(ctx, &user_id).map_err(Error::from)
+        let ctx: Context = ctx.into();
+        let user_id = auth::signup(&ctx, &form.email, &form.password)?;
+        auth::create_session(&ctx, &user_id).map_err(Error::from)
     })
     .from_err()
     .and_then(|session_id| {
@@ -37,15 +33,14 @@ pub fn signup(
 
 pub fn login(
     form: web::Json<UserForm>,
-    pool: web::Data<Pool>,
+    ctx: ContextProvider,
 ) -> impl Future<Item = HttpResponse, Error = Error> {
     let form = form.into_inner();
 
     web::block(move || {
-        let pool = pool.get().unwrap();
-        let ctx = Context::new(&pool, SECRET_KEY.as_str());
-        let user_id = auth::login(ctx.clone(), &form.email, &form.password)?;
-        auth::create_session(ctx, &user_id).map_err(Error::from)
+        let ctx: Context = ctx.into();
+        let user_id = auth::login(&ctx, &form.email, &form.password)?;
+        auth::create_session(&ctx, &user_id).map_err(Error::from)
     })
     .from_err()
     .and_then(move |session_id| {
@@ -61,13 +56,10 @@ pub fn authenticate(_: LoggedUser) -> HttpResponse {
 
 pub fn logout(
     logged_user: LoggedUser,
-    pool: web::Data<Pool>,
+    ctx: ContextProvider,
 ) -> impl Future<Item = HttpResponse, Error = Error> {
     web::block(move || {
-        let pool = pool.get().unwrap();
-        let ctx = Context::new(&pool, SECRET_KEY.as_str());
-
-        auth::delete_session(ctx, &logged_user.session_id).map_err(Error::from)
+        auth::delete_session(&ctx.into(), &logged_user.session_id).map_err(Error::from)
     })
     .from_err()
     .and_then(move |_| {
