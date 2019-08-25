@@ -6,10 +6,10 @@ use actix_web::{middleware, web, App, HttpServer};
 use core::connect_db;
 
 mod errors;
-mod helper;
+mod helpers;
 mod routes;
 
-pub use helper::{ContextProvider, LoggedUser};
+pub use helpers::{ContextProvider, LoggedUser};
 
 lazy_static::lazy_static! {
     pub static ref SECRET_KEY: String = std::env::var("SECRET_KEY").unwrap_or_else(|_| "0123".repeat(8));
