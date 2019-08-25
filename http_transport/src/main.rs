@@ -30,7 +30,7 @@ fn main() -> std::io::Result<()> {
             .wrap(
                 Cors::new()
                     .supports_credentials()
-                    .allowed_methods(vec!["GET", "POST"]),
+                    .allowed_methods(vec!["GET", "POST", "DELETE"]),
             )
             .data(web::JsonConfig::default().limit(4096))
             .configure(routes::register_routes))
