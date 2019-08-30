@@ -10,6 +10,11 @@ use diesel::{
 };
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use uuid::Uuid;
+use log::error;
+
+lazy_static::lazy_static! {
+    static ref MOCK_PASSWORD: String = hash_password("never_used", "this shouldn't match anything").unwrap();
+}
 
 pub enum Error {
     DatabaseError(DBError),
@@ -53,19 +58,23 @@ pub fn signup(ctx: &Context, user_email: &str, user_password: &str) -> Result<Uu
 pub fn login(ctx: &Context, user_email: &str, user_password: &str) -> Result<Uuid, Error> {
     use crate::schema::users::dsl::*;
 
-    let user_id = users
-        .filter(email.eq(user_email))
-        .first::<User>(&ctx.conn)
-        .ok()
-        .and_then(move |user| {
-            if verify_password(ctx.secret, &user.password, &user_password).ok()? {
-                return Some(user.id);
+    match users.filter(email.eq(user_email)).first::<User>(&ctx.conn) {
+        Ok(user) => {
+            match verify_password(ctx.secret, &user.password, &user_password) {
+                Ok(true) => Ok(user.id),
+                _ => Err(Error::IncorrectCredentials)
             }
-            None
-        })
-        .ok_or(Error::IncorrectCredentials)?;
-
-    Ok(user_id)
+        }
+        Err(_) => {
+            // This is here to prevent an attacker from getting a list of user's
+            // emails by comparing time differences.
+            // https://www.owasp.org/index.php/Testing_for_User_Enumeration_and_Guessable_User_Account_(OWASP-AT-002)
+            if let Err(err) = verify_password(ctx.secret, &MOCK_PASSWORD, &user_password) {
+                error!("There was an error trying to prevent the possibility of an attack. THIS SHOULD BE FIXED AS SOON AS POSSIBLE: {}", err);
+            }
+            Err(Error::IncorrectCredentials)
+        }
+    }
 }
 
 pub fn create_session(ctx: &Context, user_uuid: &uuid::Uuid) -> Result<String, Error> {
