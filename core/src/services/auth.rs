@@ -8,12 +8,13 @@ use diesel::{
     prelude::*,
     result::{DatabaseErrorKind, Error as DBError},
 };
+use log::error;
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use uuid::Uuid;
-use log::error;
 
+// FIXME:
 lazy_static::lazy_static! {
-    static ref MOCK_PASSWORD: String = hash_password("never_used", "this shouldn't match anything").unwrap();
+    static ref MOCK_PASSWORD: String = hash_password("this shouldn't match anything").unwrap();
 }
 
 pub enum Error {
@@ -36,8 +37,7 @@ pub fn signup(ctx: &Context, user_email: &str, user_password: &str) -> Result<Uu
 
     let uuid = uuid::Uuid::new_v4();
 
-    let hashed_password =
-        hash_password(ctx.secret, &user_password).map_err(|_| Error::InvalidPassword)?;
+    let hashed_password = hash_password(&user_password).map_err(|_| Error::InvalidPassword)?;
 
     diesel::insert_into(users)
         .values((
@@ -59,17 +59,15 @@ pub fn login(ctx: &Context, user_email: &str, user_password: &str) -> Result<Uui
     use crate::schema::users::dsl::*;
 
     match users.filter(email.eq(user_email)).first::<User>(&ctx.conn) {
-        Ok(user) => {
-            match verify_password(ctx.secret, &user.password, &user_password) {
-                Ok(true) => Ok(user.id),
-                _ => Err(Error::IncorrectCredentials)
-            }
-        }
+        Ok(user) => match verify_password(&user.password, &user_password) {
+            Ok(true) => Ok(user.id),
+            _ => Err(Error::IncorrectCredentials),
+        },
         Err(_) => {
             // This is here to prevent an attacker from getting a list of user's
             // emails by comparing time differences.
             // https://www.owasp.org/index.php/Testing_for_User_Enumeration_and_Guessable_User_Account_(OWASP-AT-002)
-            if let Err(err) = verify_password(ctx.secret, &MOCK_PASSWORD, &user_password) {
+            if let Err(err) = verify_password(&MOCK_PASSWORD, &user_password) {
                 error!("There was an error trying to prevent the possibility of an attack. THIS SHOULD BE FIXED AS SOON AS POSSIBLE: {}", err);
             }
             Err(Error::IncorrectCredentials)

@@ -1,4 +1,4 @@
-use crate::{errors::Error, SECRET_KEY};
+use crate::errors::Error;
 use actix_web::{dev::Payload, FromRequest, HttpMessage, HttpRequest};
 use core::{auth::authenticate_session, Context, Pool};
 use uuid::Uuid;
@@ -42,8 +42,8 @@ impl FromRequest for ContextProvider {
     }
 }
 
-impl<'a> From<ContextProvider> for Context<'a> {
+impl<'a> From<ContextProvider> for Context {
     fn from(context_provider: ContextProvider) -> Self {
-        Self::new(context_provider.0.get().unwrap(), SECRET_KEY.as_str())
+        Self::new(context_provider.0.get().unwrap())
     }
 }

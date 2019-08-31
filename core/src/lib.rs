@@ -17,15 +17,13 @@ pub use services::*;
 pub type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
 pub type PooledConnection = r2d2::PooledConnection<ConnectionManager<PgConnection>>;
 
-pub struct Context<'a> {
+pub struct Context {
     pub conn: PooledConnection,
-    // TODO: Might want to make this `SecretKey`
-    pub secret: &'a str,
 }
 
-impl<'a> Context<'a> {
-    pub fn new(conn: PooledConnection, secret: &'a str) -> Self {
-        Self { conn, secret }
+impl Context {
+    pub fn new(conn: PooledConnection) -> Self {
+        Self { conn }
     }
 }
 
