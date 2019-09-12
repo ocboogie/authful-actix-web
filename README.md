@@ -1,4 +1,6 @@
 # authful-actix-web
+This is a simple example of how to use [Actix Web](https://github.com/actix/actix-web) with decoupled business logic and user authentication. This project is very similar to the one described in this [blog post](https://gill.net.in/posts/auth-microservice-rust-actix-web-diesel-complete-tutorial-part-1/), but with some key differences.
+
 This project is split into two crates, `core`, and `http_transport`.
  * `core` contains all the business logic, and is what interacts with the database. This is done to be protocol agnostic.
  * `http_transport` is a thin layer between http requests and the core.
